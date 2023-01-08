@@ -31,8 +31,8 @@ at the following link:
 https://github.com/igorbrigadir/twitter-advanced-search
 
 
-#link to snscrape:
+# link to snscrape:
 https://github.com/JustAnotherArchivist/snscrape
 
 
-#Have fun ☻☻☻☻☻☻☻☻
+# Have fun ☻☻☻☻☻☻☻☻
