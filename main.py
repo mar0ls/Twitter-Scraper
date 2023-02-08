@@ -1,6 +1,6 @@
 import colorama
 from sys import exit
-from engine import bcolors, scraper
+from engine import bcolors, scrapeer
 
 colorama.init()
 
@@ -30,11 +30,11 @@ def print_menu():
 
 
 def option1():
-    scraper.twitterSearch()
+    scrapeer.twitterSearch()
 
 
 def option2():
-    scraper.twitterUser()
+    scrapeer.twitterUser()
 
 
 def option3():
