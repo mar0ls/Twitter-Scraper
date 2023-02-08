@@ -17,7 +17,7 @@ class bcolors:
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
     
-class scraper:
+class scrapeer:
     def twitterUser():
         choose1 = str(input(bcolors.BOLD + bcolors.OKBLUE + "Enter the username, without the @ sign and without spaces:" + bcolors.ENDC))
         while not choose1.strip():
