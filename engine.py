@@ -3,6 +3,7 @@ import json
 import pandas as pd
 import colorama
 from unidecode import unidecode
+import time 
 
 colorama.init()
 
@@ -25,7 +26,7 @@ class scrapeer:
         choose2 = choose1.replace(" ", "")
         choose = unidecode(choose2, "utf-8")
 
-        scraper = twitterScraper.TwitterUserScraper(choose, False)
+        scraper = twitterScraper.TwitterUserScraper(user = choose, top = True)
 
         while True:
             try:
@@ -49,25 +50,27 @@ class scrapeer:
             tweets.append({"id": tweet.id, "content": tweet.content, "media": str(tweet.media),
                            "user": tweet.user.username, "user_location": tweet.user.location,
                            "url": tweet.url, "likes": tweet.likeCount})
+                        
+        timer = time.strftime("%Y%m%d-%H%M%S")
 
-        f = open("results/tweets_user.json", "w")
+        f = open(f"results/tweets_user_{choose}_{timer}.json", "w")
         j = json.dumps(tweets)
         f.write(j)
         f.close()
-        # path = Path(r'tweets.json')
-        with open('results/tweets_user.json', 'r', encoding='utf-8') as f:
+        
+        with open(f'results/tweets_user_{choose}_{timer}.json', 'r', encoding='utf-8') as f:
             data = json.loads(f.read())
         df = pd.json_normalize(data)
-        df.to_csv('results/tweets_user.csv', index=False, encoding='utf-8')
+        df.to_csv(f'results/tweets_user_{choose}_{timer}.csv', index=False, encoding='utf-8')
         print(
-            bcolors.BOLD + bcolors.WARNING + "\nThe results were saved to the results folder in the tweets_search.json and tweet_search.csv files" + bcolors.ENDC)
+            bcolors.BOLD + bcolors.WARNING + f"\nThe results were saved to the results folder in the tweets_user_{choose}_{timer}.json and tweet_user_{choose}_{timer}.csv files" + bcolors.ENDC)
 
 
     def twitterSearch():
         choose = str(input(bcolors.BOLD + bcolors.OKGREEN + "Enter search data: " + bcolors.ENDC))
         while not choose.strip():
             choose = str(input(bcolors.BOLD + bcolors.OKGREEN + "Enter search data: ` " + bcolors.ENDC))
-        scraper = twitterScraper.TwitterSearchScraper(choose, False)
+        scraper = twitterScraper.TwitterSearchScraper(choose, top = True)
 
         while True:
             try:
@@ -90,15 +93,17 @@ class scrapeer:
             print(f"{i} content: {tweet.content}, user: {tweet.user.username}, data: {tweet.date}")
             tweets.append({"id": tweet.id, "content": tweet.content, "data": str(tweet.date), "user": tweet.user.username,
                            "user_location": tweet.user.location, "url": tweet.url, "media": str(tweet.media), "likes": tweet.likeCount})
+                        
+        timer = time.strftime("%Y%m%d-%H%M%S")
 
-        f = open("results/tweets_search.json", "w")
+        f = open(f"results/tweets_search_{timer}.json", "w")
         j = json.dumps(tweets)
         f.write(j)
         f.close()
-        # path = Path(r'tweets.json')
-        with open('results/tweets_search.json', 'r', encoding='utf-8') as f:
+        
+        with open(f'results/tweets_search_{timer}.json', 'r', encoding='utf-8') as f:
             data = json.loads(f.read())
         df = pd.json_normalize(data)
-        df.to_csv('results/tweets_search.csv', index=False, encoding='utf-8')
+        df.to_csv(f'results/tweets_search_{timer}.csv', index=False, encoding='utf-8')
         print(
-            bcolors.BOLD + bcolors.WARNING + "\nThe results were saved to the results folder in the tweets_search.json and tweet_search.csv files\n" + bcolors.ENDC)
+            bcolors.BOLD + bcolors.WARNING + f"\nThe results were saved to the results folder in the tweets_search_{timer}.json and tweet_search_{timer}.csv files\n" + bcolors.ENDC)
