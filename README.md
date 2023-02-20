@@ -1,5 +1,11 @@
+<div id="header" align="center">
+    <img src="https://giphy.com/gifs/twitter-MNa0HKdhc3SGQ" width="100"/>
+</div>
+
+
 # Twitter-Scraper
 created for training purposes
+
 
 # Description
 I present my version of Twitter scraper.
