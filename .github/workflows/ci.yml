@@ -2,8 +2,10 @@ name: CI
 
 on:
   push:
-    tags:
-      - "v*"
+    branches: [dev]
+    tags: ["v*"]
+  pull_request:
+    branches: [main]
 
 jobs:
   test:
@@ -21,18 +23,67 @@ jobs:
       - name: Run tests
         run: pytest tests/ -v
 
-  release:
+  build:
     needs: test
+    if: startsWith(github.ref, 'refs/tags/v')
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            artifact: twitter-scraper-linux
+          - os: macos-latest
+            artifact: twitter-scraper-macos
+          - os: windows-latest
+            artifact: twitter-scraper-windows.exe
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt pyinstaller
+
+      - name: Build binary (Linux / macOS)
+        if: runner.os != 'Windows'
+        run: |
+          pyinstaller --onefile --name ${{ matrix.artifact }} main.py
+          mv dist/${{ matrix.artifact }} ${{ matrix.artifact }}
+
+      - name: Build binary (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          pyinstaller --onefile --name twitter-scraper-windows main.py
+          mv dist/twitter-scraper-windows.exe ${{ matrix.artifact }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: ${{ matrix.artifact }}
+
+  release:
+    needs: build
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@v4
 
-      - name: Create release
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist/
+
+      - name: Create release with binaries
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release create "${{ github.ref_name }}" \
             --title "${{ github.ref_name }}" \
-            --generate-notes
+            --generate-notes \
+            dist/twitter-scraper-linux/twitter-scraper-linux \
+            dist/twitter-scraper-macos/twitter-scraper-macos \
+            dist/twitter-scraper-windows.exe/twitter-scraper-windows.exe
