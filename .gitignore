@@ -3,3 +3,12 @@
 .DS_Store
 node_modules/
 build/
+cookie.json
+venv/
+__pycache__/
+twscrape_accounts.db
+*.db-shm
+*.db-wal
+results/twscrape_qids.json
+results/tweets_*.json
+results/tweets_*.csv

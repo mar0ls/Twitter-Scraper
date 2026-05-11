@@ -20,7 +20,8 @@ menu_options = {
     1: bcolors.BOLD + 'start tweet search',
     2: 'start a search using the tweet search engine of a specific user',
     3: 'to display help',
-    4: 'to end the program' + bcolors.ENDC,
+    4: 'to end the program',
+    5: 'run environment check' + bcolors.ENDC,
 }
 
 
@@ -89,6 +90,10 @@ be returned.
 ''')
 
 
+def option5():
+    scrapeer.selfCheck()
+
+
 if __name__ == '__main__':
     while (True):
         print_menu()
@@ -107,5 +112,7 @@ if __name__ == '__main__':
         elif option == 4:
             print('Have a nice day ☻')
             exit()
+        elif option == 5:
+            option5()
         else:
-            print(bcolors.FAIL + 'You have made a selection that does not match the menu. Please enter a number from 1 to 4.' + bcolors.ENDC)
+            print(bcolors.FAIL + 'You have made a selection that does not match the menu. Please enter a number from 1 to 5.' + bcolors.ENDC)

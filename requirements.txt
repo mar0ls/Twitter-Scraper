@@ -1,0 +1,8 @@
+anyascii
+colorama
+httpx
+pandas
+pytest
+requests
+twscrape
+XClientTransaction
