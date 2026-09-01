@@ -21,7 +21,8 @@ menu_options = {
     2: 'start a search using the tweet search engine of a specific user',
     3: 'to display help',
     4: 'to end the program',
-    5: 'run environment check' + bcolors.ENDC,
+    5: 'run environment check',
+    6: 'add or refresh the X account (cookies)' + bcolors.ENDC,
 }
 
 
@@ -58,7 +59,7 @@ def option3():
         'filter:blue_verified' tweets from 'verified' users who paid $8 for Twitter Blue 
 
    [+] When searching where time is important, you can enter the data to be searched with:
-        'science:2022-12-31' - on or after (inclusive) the specified date. 4-digit year, 2-digit month, 2-digit day separated by a hyphen.
+        'since:2022-12-31' - on or after (inclusive) the specified date. 4-digit year, 2-digit month, 2-digit day separated by a hyphen.
         'until:2022-12-31' - before (NOT including) the specified date. Combine with the "from" operator for dates between.
    [+] When searching geo, you can enter the data to search along with:
         'near:city' - geotagged here, e.g. near:Warsaw
@@ -94,14 +95,21 @@ def option5():
     scrapeer.selfCheck()
 
 
+def option6():
+    scrapeer.addAccount()
+
+
 if __name__ == '__main__':
     while (True):
         print_menu()
-        option = ''
         try:
             option = int(input(bcolors.BOLD + 'Your choise: ' + bcolors.ENDC))
-        except:
+        except ValueError:
             print(bcolors.FAIL + 'Try again by entering a number ☻☻☻' + bcolors.ENDC)
+            continue
+        except (EOFError, KeyboardInterrupt):
+            print('\nHave a nice day ☻')
+            exit()
 
         if option == 1:
             option1()
@@ -114,5 +122,7 @@ if __name__ == '__main__':
             exit()
         elif option == 5:
             option5()
+        elif option == 6:
+            option6()
         else:
-            print(bcolors.FAIL + 'You have made a selection that does not match the menu. Please enter a number from 1 to 5.' + bcolors.ENDC)
+            print(bcolors.FAIL + 'You have made a selection that does not match the menu. Please enter a number from 1 to 6.' + bcolors.ENDC)

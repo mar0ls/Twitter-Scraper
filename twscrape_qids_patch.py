@@ -12,23 +12,11 @@ import httpx
 
 logger = logging.getLogger(__name__)
 
-TRACKED_OPS: tuple[str, ...] = (
-    "SearchTimeline",
-    "UserByScreenName",
-    "UserByRestId",
-    "TweetDetail",
-    "UserTweets",
-    "UserTweetsAndReplies",
-    "ListLatestTweetsTimeline",
-    "Followers",
-    "Following",
-    "BlueVerifiedFollowers",
-    "UserCreatorSubscriptions",
-    "UserMedia",
-    "GenericTimelineById",
-)
+# Both scraper modes go through twscrape's api.search(), which only ever uses
+# SearchTimeline. Add an operation here if the scraper starts calling it.
+TRACKED_OPS: tuple[str, ...] = ("SearchTimeline",)
 
-_BUNDLE_RE = re.compile(r"https://abs\\.twimg\\.com/responsive-web/client-web[^\"']+\\.js")
+_BUNDLE_RE = re.compile(r"""https://abs\.twimg\.com/responsive-web/client-web[^"']+\.js""")
 _USER_AGENT = (
     "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
     "(KHTML, like Gecko) Chrome/124.0 Safari/537.36"

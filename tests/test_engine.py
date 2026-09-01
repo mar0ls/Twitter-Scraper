@@ -115,3 +115,62 @@ class TestSaveResults:
         lines = open(csv_path).readlines()
         assert len(lines) == 2
         assert "content" in lines[0]
+
+
+class TestQidPatterns:
+    def test_bundle_regex_matches_real_url(self):
+        from twscrape_qids_patch import _BUNDLE_RE
+
+        url = "https://abs.twimg.com/responsive-web/client-web/main.7de7adccd6c7c8f0a.js"
+        html = f'<script src="{url}"></script>'
+        assert _BUNDLE_RE.findall(html) == [url]
+
+    def test_qid_pattern_extracts_query_id(self):
+        from twscrape_qids_patch import _qid_pattern
+
+        js = 'queryId:"hyPfJYJ_XAtDYoslQc-Rgg",operationName:"SearchTimeline"'
+        match = _qid_pattern("SearchTimeline").search(js)
+        assert match is not None
+        assert match.group(1) == "hyPfJYJ_XAtDYoslQc-Rgg"
+
+
+class TestTidPatch:
+    def test_create_sync_reports_clear_error(self, monkeypatch):
+        import requests
+
+        from twscrape_x_tid_patch import _TIDAdapter
+
+        def boom(*args, **kwargs):
+            raise requests.ConnectionError("offline")
+
+        monkeypatch.setattr(requests.Session, "get", boom)
+        with pytest.raises(RuntimeError, match="Cannot build X transaction id"):
+            _TIDAdapter._create_sync()
+
+
+class TestAddCookieAccount:
+    def test_stores_and_replaces_account(self, tmp_path):
+        import asyncio
+
+        from setup_twscrape_account import add_cookie_account
+
+        db_path = str(tmp_path / "accounts.db")
+        assert asyncio.run(add_cookie_account(db_path, "u1", "auth_token=aaa; ct0=bbb"))
+
+        with sqlite3.connect(db_path) as conn:
+            rows = conn.execute("SELECT username, active FROM accounts").fetchall()
+        assert rows == [("u1", 1)]
+
+        assert asyncio.run(add_cookie_account(db_path, "u1", "auth_token=ccc; ct0=ddd"))
+        with sqlite3.connect(db_path) as conn:
+            rows = conn.execute("SELECT username, cookies FROM accounts").fetchall()
+        assert len(rows) == 1
+        assert json.loads(rows[0][1])["auth_token"] == "ccc"
+
+    def test_rejects_incomplete_cookies(self, tmp_path):
+        import asyncio
+
+        from setup_twscrape_account import add_cookie_account
+
+        with pytest.raises(ValueError, match="ct0"):
+            asyncio.run(add_cookie_account(str(tmp_path / "a.db"), "u1", "auth_token=aaa"))
