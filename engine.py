@@ -7,7 +7,8 @@ from anyascii import anyascii
 import time 
 
 from twscrape_qids_patch import apply_persisted_qids, refresh_and_apply_sync
-from twscrape_x_tid_patch import install_x_tid_patch
+from setup_twscrape_account import add_cookie_account
+from twscrape_x_tid_patch import install_x_tid_patch, is_patch_active
 
 colorama.init()
 
@@ -55,8 +56,6 @@ def _run_twscrape_search(query: str, limit: int):
 
     _prepare_twscrape()
     db_path = _get_twscrape_db_path()
-    if not _has_active_twscrape_account(db_path):
-        return []
 
     async def _collect():
         api = API(pool=db_path)
@@ -71,26 +70,7 @@ def _run_twscrape_search(query: str, limit: int):
 
 
 def _run_twscrape_user(username: str, limit: int):
-    try:
-        from twscrape import API
-    except Exception:
-        return []
-
-    _prepare_twscrape()
-    db_path = _get_twscrape_db_path()
-    if not _has_active_twscrape_account(db_path):
-        return []
-
-    async def _collect():
-        api = API(pool=db_path)
-        out = []
-        async for tweet in api.search(f"from:{username}", limit=limit):
-            out.append(tweet)
-            if len(out) >= limit:
-                break
-        return out
-
-    return asyncio.run(_collect())
+    return _run_twscrape_search(f"from:{username}", limit)
 
 
 def _can_use_twscrape() -> bool:
@@ -137,19 +117,81 @@ class bcolors:
     UNDERLINE = '\033[4m'
     
 class scrapeer:
+    def addAccount():
+        print(bcolors.BOLD + bcolors.OKBLUE + "\nPaste the cookies of a logged-in X session." + bcolors.ENDC)
+        print("Expected format: auth_token=...; ct0=...")
+        cookies = input(bcolors.BOLD + "Cookies: " + bcolors.ENDC).strip()
+        if not cookies:
+            print(bcolors.BOLD + bcolors.FAIL + "\nNothing entered, the stored account is unchanged.\n" + bcolors.ENDC)
+            return
+
+        username = input(bcolors.BOLD + "Account label [cookie_account]: " + bcolors.ENDC).strip()
+        username = username.replace(" ", "") or "cookie_account"
+        db_path = _get_twscrape_db_path()
+
+        try:
+            stored = asyncio.run(add_cookie_account(db_path, username, cookies))
+        except ValueError as exc:
+            print(bcolors.BOLD + bcolors.FAIL + f"\n{exc}\n" + bcolors.ENDC)
+            return
+        except Exception as exc:
+            print(bcolors.BOLD + bcolors.FAIL + f"\nCould not store the account ({exc}).\n" + bcolors.ENDC)
+            return
+
+        if not stored:
+            print(bcolors.BOLD + bcolors.FAIL + f"\nAccount was not written to {db_path}.\n" + bcolors.ENDC)
+            return
+
+        print(
+            bcolors.BOLD
+            + bcolors.OKGREEN
+            + f"\nAccount '{username}' saved to {db_path}. Run option 5 to verify it.\n"
+            + bcolors.ENDC
+        )
+
     def selfCheck():
+        global _TWSCRAPE_PREPARED
+
         print(bcolors.BOLD + bcolors.OKBLUE + "\nRunning environment check..." + bcolors.ENDC)
         db_path = _get_twscrape_db_path()
         active = _has_active_twscrape_account(db_path)
 
-        print(f"[1/3] twscrape DB path: {db_path}")
-        print(f"[2/3] active account available: {active}")
+        print(f"[1/5] twscrape DB path: {db_path}")
+        print(f"[2/5] active account available: {active}")
+
+        try:
+            install_x_tid_patch()
+            if is_patch_active():
+                from twscrape_x_tid_patch import _TIDAdapter
+
+                _TIDAdapter._create_sync()
+                print("[3/5] X transaction id generator: OK (local fallback patch)")
+            else:
+                print("[3/5] X transaction id generator: twscrape built-in (local patch not needed)")
+        except Exception as exc:
+            print(bcolors.BOLD + bcolors.FAIL + f"[3/5] X transaction id generator FAILED: {exc}" + bcolors.ENDC)
+            return
+
+        apply_persisted_qids()
+        try:
+            info = refresh_and_apply_sync()
+            missing = ", ".join(info["missing"]) or "none"
+            print(f"[4/5] GraphQL query ids refreshed: {len(info['qids'])} (missing: {missing})")
+        except Exception as exc:
+            print(
+                bcolors.BOLD
+                + bcolors.WARNING
+                + f"[4/5] query id refresh failed ({exc}); falling back to cached ids"
+                + bcolors.ENDC
+            )
+
+        _TWSCRAPE_PREPARED = True
 
         if not active:
             print(
                 bcolors.BOLD
                 + bcolors.FAIL
-                + "No active twscrape account found. Run setup_twscrape_account.py first."
+                + "[5/5] skipped - no active twscrape account. Use menu option 6 to add one."
                 + bcolors.ENDC
             )
             return
@@ -157,7 +199,7 @@ class scrapeer:
         search_rows = _run_twscrape_search("python lang:en", 2)
         user_rows = _run_twscrape_user("nasa", 2)
 
-        print(f"[3/3] search test rows: {len(search_rows)} | user test rows: {len(user_rows)}")
+        print(f"[5/5] search test rows: {len(search_rows)} | user test rows: {len(user_rows)}")
 
         if search_rows and user_rows:
             print(bcolors.BOLD + bcolors.OKGREEN + "Environment check passed." + bcolors.ENDC)
@@ -191,7 +233,7 @@ class scrapeer:
             print(
                 bcolors.BOLD
                 + bcolors.FAIL
-                + f"\nNo active twscrape account found. Check DB: {db_path}\n"
+                + f"\nNo active twscrape account found in {db_path}. Use menu option 6 to add one.\n"
                 + bcolors.ENDC
             )
             return
@@ -199,7 +241,7 @@ class scrapeer:
         try:
             tw_items = _run_twscrape_user(choose, n)
             for i, tweet in enumerate(tw_items):
-                record = _tweet_to_record(tweet)
+                record = _tweet_to_record(tweet, include_location=True)
                 tweets.append(record)
                 print(f"{i} content: {record['content']}, data: {record['data']}")
         except Exception as exc:
@@ -247,7 +289,7 @@ class scrapeer:
             print(
                 bcolors.BOLD
                 + bcolors.FAIL
-                + f"\nNo active twscrape account found. Check DB: {db_path}\n"
+                + f"\nNo active twscrape account found in {db_path}. Use menu option 6 to add one.\n"
                 + bcolors.ENDC
             )
             return

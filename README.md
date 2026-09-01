@@ -7,7 +7,7 @@
 [![CI](https://github.com/mar0ls/Twitter-Scraper/actions/workflows/ci.yml/badge.svg)](https://github.com/mar0ls/Twitter-Scraper/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/badge/python-3.13-blue)](https://www.python.org/)
 
-> **Verified working — May 11, 2026**
+> **Verified working — September 1, 2026**
 
 Command-line Twitter/X scraper with two interactive modes:
 
@@ -18,10 +18,12 @@ Results are saved to the [results](results) directory as JSON and CSV files.
 
 ## How it works
 
-The scraper uses `twscrape` for search and user queries, extended by two local patch modules:
+The scraper uses `twscrape` (0.20.1 or newer) for search and user queries, extended by two local patch modules:
 
 - `twscrape_qids_patch` — refreshes GraphQL query IDs from X bundles and caches them in `results/twscrape_qids.json`
-- `twscrape_x_tid_patch` — replaces twscrape's transaction-ID generator with `XClientTransaction`
+- `twscrape_x_tid_patch` — fallback transaction-ID generator based on `XClientTransaction`. Since twscrape 0.20 ships its own maintained generator, this patch stays inactive; set `TWS_FORCE_TID_PATCH=1` to force it.
+
+Menu option 5 (environment check) verifies both patches, the account and a live query, and reports which stage fails.
 
 ## Installation
 
@@ -44,10 +46,15 @@ Menu:
 3. Help
 4. Exit
 5. Environment check
+6. Add or refresh the X account
 
 ## Account setup
 
 `twscrape` needs at least one active account. Fresh clones do not include a database or session cookies.
+
+### From the menu (option 6)
+
+Option `6` asks for the cookies of a logged-in X session and stores them, so no environment variables are needed. This is the only way to configure the released binaries, which do not ship `setup_twscrape_account.py`.
 
 ### Password-based
 
@@ -68,6 +75,8 @@ export TWS_USERNAME='cookie_account'
 export TWS_COOKIES='auth_token=...; ct0=...'
 python setup_twscrape_account.py
 ```
+
+Cookies expire. Re-running the command — or menu option `6` — with fresh ones replaces the stored account.
 
 Default database path: `twscrape_accounts.db`. Override with:
 
@@ -90,12 +99,15 @@ export TWSCRAPE_DB_PATH='twscrape_accounts.db'
 
 ## Environment check
 
-Option `5` verifies:
+Option `5` verifies, in order:
 
-- configured database path
-- presence of an active account
-- a keyword search test (2 tweets)
-- a user search test (2 tweets)
+1. configured database path
+2. presence of an active account
+3. the X transaction-ID generator (built-in or local fallback)
+4. a refresh of the GraphQL query IDs
+5. a keyword search test and a user search test (2 tweets each)
+
+The first failing stage is reported and the check stops there.
 
 ## Advanced search operators
 
@@ -120,6 +132,8 @@ Selected operators:
 | twscrape | MIT |
 | XClientTransaction | MIT |
 | anyascii | MIT |
+| beautifulsoup4 | MIT |
+| httpx | BSD 3-Clause |
 | pandas | BSD 3-Clause |
 | requests | Apache-2.0 |
 | colorama | BSD |

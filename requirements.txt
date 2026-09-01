@@ -1,8 +1,9 @@
 anyascii
+beautifulsoup4
 colorama
 httpx
 pandas
 pytest
 requests
-twscrape
+twscrape>=0.20.1
 XClientTransaction
